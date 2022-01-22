@@ -226,6 +226,9 @@ static uint8_t processPacket(void)
 #endif
 			)
 
+#ifdef ENABLE_INTEGRITY_CHECK
+			InitValid();
+#endif
 			lastPacket = highPacket = 0;
 			returnCode = ACK; // Send back acknowledge for packet 0
 			break;
@@ -273,6 +276,11 @@ static uint8_t processPacket(void)
 					returnCode = ACK;
 				}
 
+#ifdef ENABLE_INTEGRITY_CHECK
+				// Calculation of integrity (e.g. CRC) before packetLength gets rounded up
+				calcImageIntegrity(pageBase, packetLength);
+#endif
+
 				// Round up packet length to a full flash sector size
 				while(packetLength % SPM_PAGESIZE)
 				{
@@ -312,6 +320,14 @@ static uint8_t processPacket(void)
 
 				if(returnCode == FINAL_ACK)
 				{
+#ifdef ENABLE_INTEGRITY_CHECK
+					// Is image integrity check pass?
+					if(!isValidImage())
+					{
+						returnCode = INVALID_IMAGE;
+						break;
+					}
+#endif
 					// Flash is complete
 					// Hand over to application
 

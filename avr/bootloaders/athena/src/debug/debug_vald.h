@@ -17,10 +17,7 @@
 #define tracePGMlnVald(msg) tracePGMln(mDebugVald_PREFIX, msg)
 const unsigned char mDebugVald_PREFIX[] PROGMEM = "Vald: ";
 const unsigned char mDebugVald_VALID[] PROGMEM = "Valid image";
-const unsigned char mDebugVald_FAILED[] PROGMEM = "Failed at ";
-const unsigned char mDebugVald_WITH[] PROGMEM = " with ";
-const unsigned char mDebugVald_0x0C[] PROGMEM = " instead of 0x0C";
-const unsigned char mDebugVald_0x94[] PROGMEM = " instead of 0x94";
+const unsigned char mDebugVald_FAILED[] PROGMEM = "Invalid image";
 #endif
 
 #endif
