@@ -1,3 +1,4 @@
 #!/bin/bash
 
+echo $PATH
 echo "hello from sh-sh"

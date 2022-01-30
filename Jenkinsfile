@@ -3,14 +3,14 @@ pipeline {
     stages {
         stage('build1') {
             steps {
-                bat 'hello'
+                sh './hello'
             }
         }
         stage('build2') {
             steps {
             script {
                 try {
-                    bat 'sh test.sh'
+                    sh './test.sh'
                 }
                 catch (err) {
                     echo "Failed: ${err}"
@@ -22,7 +22,7 @@ pipeline {
         }
         stage('build3') {
             steps {
-                bat 'hello'
+                sh './hello'
             }
         }
 
@@ -42,7 +42,6 @@ pipeline {
         }
         changed {
             echo 'This will run only if the state of the Pipeline has changed'
-            echo 'For example, if the Pipeline was previously failing but is now successful'
         }
     }
 }
