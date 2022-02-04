@@ -4,14 +4,21 @@
 pipeline
 {
   agent any
-  environment
-  {
-    GIT_CHANGE_LOG = gitChangeLog(currentBuild.changeSets)
-  }
   parameters
   {
     string(defaultValue: '11', description: 'Major version number (x.0.0)', name: 'MAJOR_VERSION')
     string(defaultValue: '3', description: 'Minor version number (0.x.0)', name: 'MINOR_VERSION')
+  }
+  triggers
+  {
+    //At 04:00 on every day-of-week from Monday through Friday.
+    //pollSCM('H 4 * * 1-5')
+    pollSCM('H/3 * * * *')
+  }
+  environment
+  {
+        GIT_CHANGE_LOG = gitChangeLog(currentBuild.changeSets)
+        BUILD_TAG = "${params.MAJOR_VERSION}.${params.MINOR_VERSION}.${BUILD_NUMBER}"
   }
   stages
   {
@@ -47,7 +54,7 @@ pipeline
         echo 'Archiving artifacts'
         dir('buildresults/release')
         {
-          archiveArtifacts 'athena_bootloaders-*'
+          archiveArtifacts 'athena_bootloaders*'
         }
         dir('buildresults/meson-dist')
         {
@@ -58,7 +65,8 @@ pipeline
       {
         failure
         {
-          sendNotifications 'ARCHIVE_ERROR'
+          // sendNotifications 'ARCHIVE_ERROR'
+          echo 'ARCHIVE_ERROR'
         }
       }
     }
@@ -68,46 +76,48 @@ pipeline
     always
     {
       // Scan for open tasks, warnings, issues, etc.
-      recordIssues(
-        enabledForFailure: true,
-        healthy: 5,
-        unhealthy: 10,
-        referenceJobName: 'ea-nightly/libmemory/master',
-        qualityGates: [
-          // 3 new issue: unstable
-          [threshold: 15, type: 'DELTA', unstable: true],
-          // 5 new issues: failed build
-          [threshold: 15, type: 'DELTA', unstable: false],
-          // 10 total issues: unstable
-          [threshold: 15, type: 'TOTAL', unstable: true],
-          // 20 total issues: fail
-          [threshold: 15, type: 'TOTAL', unstable: false]
-        ],
-        tools: [
-          // TODO: re-enable: clang(),
-          taskScanner(
-            excludePattern: 'buildresults/**, dependencies/**, build/**',
-            includePattern: '**/*.c, **/*.cpp, **/*.h, **/*.hpp, **/*.lua, **/*.sh, **/*.build',
-            normalTags: 'TODO, to do, WIP',
-            highTags: 'FIXME, FIX',
-            ignoreCase: true,
-          ),
-          //cppCheck(
-          //  pattern: 'buildresults/**/cppcheck.xml',
-          //),
-        ]
-      )
+      // recordIssues(
+      //   enabledForFailure: true,
+      //   healthy: 5,
+      //   unhealthy: 10,
+      //   referenceJobName: 'ea-nightly/libmemory/master',
+      //   qualityGates: [
+      //     // 3 new issue: unstable
+      //     [threshold: 15, type: 'DELTA', unstable: true],
+      //     // 5 new issues: failed build
+      //     [threshold: 15, type: 'DELTA', unstable: false],
+      //     // 10 total issues: unstable
+      //     [threshold: 15, type: 'TOTAL', unstable: true],
+      //     // 20 total issues: fail
+      //     [threshold: 15, type: 'TOTAL', unstable: false]
+      //   ],
+      //   tools: [
+      //     // TODO: re-enable: clang(),
+      //     taskScanner(
+      //       excludePattern: 'buildresults/**, dependencies/**, build/**',
+      //       includePattern: '**/*.c, **/*.cpp, **/*.h, **/*.hpp, **/*.lua, **/*.sh, **/*.build',
+      //       normalTags: 'TODO, to do, WIP',
+      //       highTags: 'FIXME, FIX',
+      //       ignoreCase: true,
+      //     ),
+      //     //cppCheck(
+      //     //  pattern: 'buildresults/**/cppcheck.xml',
+      //     //),
+      //   ]
+      // )
 
       // Report Status
-      slackNotify(currentBuild.currentResult)
+      // slackNotify(currentBuild.currentResult)
+      echo "Done: ${BUILD_TAG}"
       gitTagCleanup "${params.MAJOR_VERSION}.${params.MINOR_VERSION}.${BUILD_NUMBER}"
     }
     success
     {
-      githubSetConfig('69e4682e-2951-492f-b828-da06364c322d')
+      //githubSetConfig('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')
       // Release step creates a tag
-      githubUploadRelease("${params.MAJOR_VERSION}.${params.MINOR_VERSION}.${BUILD_NUMBER}",
-        'buildresults/release/*.zip, buildresults/meson-dist/AthenaBootloaderProjectFiles-*')
+      // githubUploadRelease("${params.MAJOR_VERSION}.${params.MINOR_VERSION}.${BUILD_NUMBER}",
+      //  'buildresults/release/*.zip, buildresults/meson-dist/AthenaBootloaderProjectFiles-*')
+      sh './github_rel.sh'
     }
     failure
     {
@@ -115,9 +125,22 @@ pipeline
       * This job does not have a GitHub configuration,
       * so we need to create a dummy config
       */
-      githubSetConfig('69e4682e-2951-492f-b828-da06364c322d')
-      githubFileIssue()
-      emailNotify(currentBuild.currentResult)
+      // githubSetConfig('69e4682e-2951-492f-b828-da06364c322d')
+      // githubFileIssue()
+      //emailNotify(currentBuild.currentResult)
+      echo 'job failed'
     }
   }
 }
+
+
+// script
+// {
+//   result = sh (script: "git log -1 | grep '.*firmware images.*'", returnStatus: true)
+//   echo "This build should be skipped: ${result}"
+//   if (result == 0) {
+//       echo "0"
+//   } else {
+//       echo "NOT 0"
+//   }
+// }
