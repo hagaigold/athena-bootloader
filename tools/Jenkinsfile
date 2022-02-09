@@ -13,7 +13,7 @@ pipeline
   {
     //At 04:00 on every day-of-week from Monday through Friday.
     //pollSCM('H 4 * * 1-5')
-    pollSCM('H/3 * * * *')
+    pollSCM('H/15 * * * *')
   }
   environment
   {
